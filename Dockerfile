@@ -1,11 +1,11 @@
-# Используем официальный образ FFmpeg (самый свежий)
-FROM jrottenberg/ffmpeg:latest-alpine AS ffmpeg
+# Используем официальный образ FFmpeg
+FROM jrottenberg/ffmpeg:4.4-alpine AS ffmpeg
 
 # Основной образ с Node.js
 FROM node:18-alpine
 
-# Копируем FFmpeg из официального образа
-COPY --from=ffmpeg /usr/local /usr/local
+# Устанавливаем FFmpeg через пакетный менеджер Alpine (самый надежный способ)
+RUN apk add --no-cache ffmpeg
 
 # Устанавливаем n8n
 RUN npm install -g n8n@latest
