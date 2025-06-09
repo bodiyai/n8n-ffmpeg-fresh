@@ -1,9 +1,11 @@
 FROM ubuntu:22.04
 
-# Устанавливаем зависимости
-RUN apt update && apt install -y wget xz-utils nodejs npm
+# Устанавливаем зависимости и свежий Node.js
+RUN apt update && apt install -y wget xz-utils curl
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+RUN apt install -y nodejs
 
-# Скачиваем СТАТИЧЕСКУЮ сборку FFmpeg 7.1 напрямую с официального сайта
+# Скачиваем СТАТИЧЕСКУЮ сборку FFmpeg 7.1
 RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
 RUN tar -xf ffmpeg-release-amd64-static.tar.xz
 RUN mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/
@@ -13,8 +15,10 @@ RUN chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
 # Устанавливаем n8n
 RUN npm install -g n8n@latest
 
-# Проверяем версию FFmpeg
-RUN echo "=== FFMPEG VERSION CHECK ===" && \
+# Проверяем версии
+RUN echo "=== NODE VERSION ===" && node --version && \
+    echo "=== NPM VERSION ===" && npm --version && \
+    echo "=== FFMPEG VERSION CHECK ===" && \
     ffmpeg -version && \
     echo "=== END VERSION CHECK ==="
 
