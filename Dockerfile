@@ -1,10 +1,19 @@
+# Используем официальный образ FFmpeg (самый свежий)
+FROM jrottenberg/ffmpeg:latest-alpine AS ffmpeg
+
+# Основной образ с Node.js
 FROM node:18-alpine
 
-# Ставим самый свежий FFmpeg
-RUN apk add --no-cache ffmpeg
+# Копируем FFmpeg из официального образа
+COPY --from=ffmpeg /usr/local /usr/local
 
-# Ставим самый свежий n8n
+# Устанавливаем n8n
 RUN npm install -g n8n@latest
+
+# Проверяем версию FFmpeg
+RUN echo "=== FFMPEG VERSION CHECK ===" && \
+    ffmpeg -version && \
+    echo "=== END VERSION CHECK ==="
 
 EXPOSE 5678
 CMD ["n8n", "start"]
