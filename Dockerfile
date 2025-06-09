@@ -1,11 +1,14 @@
-# Используем официальный образ FFmpeg
-FROM jrottenberg/ffmpeg:4.4-alpine AS ffmpeg
+FROM ubuntu:22.04
 
-# Основной образ с Node.js
-FROM node:18-alpine
+# Устанавливаем зависимости
+RUN apt update && apt install -y wget xz-utils nodejs npm
 
-# Устанавливаем FFmpeg через пакетный менеджер Alpine (самый надежный способ)
-RUN apk add --no-cache ffmpeg
+# Скачиваем СТАТИЧЕСКУЮ сборку FFmpeg 7.1 напрямую с официального сайта
+RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+RUN tar -xf ffmpeg-release-amd64-static.tar.xz
+RUN mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/
+RUN mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/
+RUN chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
 
 # Устанавливаем n8n
 RUN npm install -g n8n@latest
