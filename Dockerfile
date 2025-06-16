@@ -28,13 +28,11 @@ RUN npm install -g @remotion/noise@latest
 # Устанавливаем дополнительные зависимости для работы Remotion в контейнере
 RUN apt install -y libnss3 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libxss1 libasound2
 
-# Проверяем версии
+# Проверяем версии (БЕЗ Remotion)
 RUN echo "=== NODE VERSION ===" && node --version && \
     echo "=== NPM VERSION ===" && npm --version && \
     echo "=== FFMPEG VERSION CHECK ===" && \
     ffmpeg -version && \
-    echo "=== REMOTION VERSION CHECK ===" && \
-    npx remotion --version && \
     echo "=== END VERSION CHECK ==="
 
 ENV N8N_HOST=0.0.0.0
