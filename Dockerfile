@@ -1,6 +1,6 @@
 FROM node:20-bullseye
 
-# Устанавливаем системные зависимости
+# Устанавливаем системные зависимости (БЕЗ ffmpeg из репозитория)
 RUN apt update && apt install -y \
     wget \
     xz-utils \
@@ -38,8 +38,14 @@ RUN npm install -g npm@latest
 # Устанавливаем n8n
 RUN npm install -g n8n@latest
 
-# Устанавливаем Remotion
-RUN npm install -g \
+# Создаем рабочую директорию для Remotion
+WORKDIR /app
+
+# Создаем package.json для локальной установки Remotion
+RUN echo '{"name": "n8n-remotion", "version": "1.0.0", "dependencies": {}}' > package.json
+
+# Устанавливаем Remotion локально
+RUN npm install \
     @remotion/cli@latest \
     @remotion/renderer@latest \
     @remotion/media-utils@latest \
@@ -48,12 +54,18 @@ RUN npm install -g \
     @remotion/fonts@latest \
     @remotion/noise@latest
 
-# Проверяем основные версии
+# Создаем симлинк для remotion CLI
+RUN ln -s /app/node_modules/.bin/remotion /usr/local/bin/remotion
+
+# Проверяем установку
 RUN echo "=== NODE VERSION ===" && node --version && \
     echo "=== NPM VERSION ===" && npm --version && \
     echo "=== N8N VERSION ===" && n8n --version && \
+    echo "=== REMOTION VERSION ===" && remotion --version && \
     echo "=== FFMPEG VERSION CHECK ===" && \
-    ffmpeg -version && \
+    /usr/local/bin/ffmpeg -version && \
+    echo "=== LOCAL REMOTION PACKAGES ===" && \
+    ls -la /app/node_modules/.bin/ | grep remotion && \
     echo "=== END VERSION CHECK ==="
 
 # Настройки окружения
@@ -61,10 +73,16 @@ ENV N8N_HOST=0.0.0.0
 ENV N8N_PORT=5678
 ENV WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/
 
+# Добавляем локальные модули в PATH
+ENV PATH="/app/node_modules/.bin:${PATH}"
+
 # Настройки для Remotion в headless режиме
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 EXPOSE 5678
+
+# Возвращаемся в root для запуска n8n
+WORKDIR /
 
 CMD ["n8n", "start"]
