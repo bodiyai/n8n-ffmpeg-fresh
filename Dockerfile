@@ -14,7 +14,7 @@ RUN mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/
 RUN mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/
 RUN chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
 
-# Очищаем временные файлы FFmpeg
+# Очищаем временные файлы FFmpeg++
 RUN rm -rf ffmpeg-release-amd64-static.tar.xz ffmpeg-*-amd64-static/
 
 # Устанавливаем дополнительные зависимости для работы Remotion в контейнере
