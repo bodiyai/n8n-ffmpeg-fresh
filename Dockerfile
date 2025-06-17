@@ -1,14 +1,12 @@
-FROM node:20-bullseye
+FROM node:20-bullseye-slim
 
-# Устанавливаем системные зависимости (БЕЗ ffmpeg из репозитория)
-RUN apt update && apt install -y \
+# Устанавливаем все зависимости одной командой и очищаем кеш
+RUN apt update && apt install -y --no-install-recommends \
     wget \
+    gnupg \
+    ca-certificates \
     xz-utils \
-    python3 \
-    python3-pip \
-    build-essential \
-    make \
-    g++ \
+    chromium \
     libnss3 \
     libatk-bridge2.0-0 \
     libdrm2 \
@@ -19,66 +17,56 @@ RUN apt update && apt install -y \
     libgbm1 \
     libxss1 \
     libasound2 \
-    libgtk-3-0 \
-    libxcb-dri3-0
+    fonts-liberation \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
-# Скачиваем СТАТИЧЕСКУЮ сборку FFmpeg 7.1
-RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
-RUN tar -xf ffmpeg-release-amd64-static.tar.xz
-RUN mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/
-RUN mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/
-RUN chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
-
-# Очищаем временные файлы FFmpeg
-RUN rm -rf ffmpeg-release-amd64-static.tar.xz ffmpeg-*-amd64-static/
-
-# Обновляем npm
-RUN npm install -g npm@latest
+# Скачиваем FFmpeg и сразу очищаем временные файлы
+RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
+    && tar -xf ffmpeg-release-amd64-static.tar.xz \
+    && mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/ \
+    && mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/ \
+    && chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe \
+    && rm -rf ffmpeg-release-amd64-static.tar.xz ffmpeg-*-amd64-static/
 
 # Устанавливаем n8n
-RUN npm install -g n8n@latest
+RUN npm install -g npm@latest n8n@latest && npm cache clean --force
 
-# Создаем рабочую директорию для Remotion
+# Создаем рабочую директорию и устанавливаем ВСЕ необходимые Remotion пакеты
 WORKDIR /app
-
-# Создаем package.json для локальной установки Remotion
-RUN echo '{"name": "n8n-remotion", "version": "1.0.0", "dependencies": {}}' > package.json
-
-# Устанавливаем Remotion локально
-RUN npm install \
+RUN echo '{"name": "n8n-remotion", "version": "1.0.0"}' > package.json \
+    && npm install --no-save \
     @remotion/cli@latest \
     @remotion/renderer@latest \
     @remotion/media-utils@latest \
     @remotion/shapes@latest \
     @remotion/transitions@latest \
     @remotion/fonts@latest \
-    @remotion/noise@latest
+    @remotion/noise@latest \
+    && npm cache clean --force \
+    && ln -s /app/node_modules/.bin/remotion /usr/local/bin/remotion
 
-# Создаем симлинк для remotion CLI
-RUN ln -s /app/node_modules/.bin/remotion /usr/local/bin/remotion
+# Проверяем установку браузера для Remotion
+RUN npx remotion browser ensure
 
-# Проверяем установку
-RUN echo "=== NODE VERSION ===" && node --version && \
-    echo "=== NPM VERSION ===" && npm --version && \
-    echo "=== N8N VERSION ===" && n8n --version && \
-    echo "=== REMOTION VERSION ===" && remotion --version && \
-    echo "=== FFMPEG VERSION CHECK ===" && \
-    /usr/local/bin/ffmpeg -version && \
-    echo "=== LOCAL REMOTION PACKAGES ===" && \
-    ls -la /app/node_modules/.bin/ | grep remotion && \
-    echo "=== END VERSION CHECK ==="
+# Проверяем установку (краткая версия)
+RUN echo "=== VERSIONS ===" && \
+    node --version && \
+    n8n --version && \
+    remotion --version && \
+    /usr/local/bin/ffmpeg -version | head -1 && \
+    chromium --version && \
+    echo "=== ALL READY ==="
 
 # Настройки окружения
-ENV N8N_HOST=0.0.0.0
-ENV N8N_PORT=5678
-ENV WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/
-
-# Добавляем локальные модули в PATH
-ENV PATH="/app/node_modules/.bin:${PATH}"
-
-# Настройки для Remotion в headless режиме
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV N8N_HOST=0.0.0.0 \
+    N8N_PORT=5678 \
+    WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/ \
+    PATH="/app/node_modules/.bin:${PATH}" \
+    NODE_OPTIONS="--max-old-space-size=4096" \
+    PUPPETEER_EXECUTABLE_PATH="/usr/bin/chromium" \
+    CHROME_BIN="/usr/bin/chromium" \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 EXPOSE 5678
 
