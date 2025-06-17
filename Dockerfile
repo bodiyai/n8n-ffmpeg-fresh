@@ -1,30 +1,14 @@
-FROM ubuntu:22.04
+FROM node:20-bullseye
 
-# Устанавливаем зависимости
-RUN apt update && apt install -y wget xz-utils curl
-
-# Устанавливаем Node.js 20 (LTS)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-RUN apt install -y nodejs
-
-# Обновляем npm до последней версии
-RUN npm install -g npm@latest
-
-# Проверяем версии Node.js и npm
-RUN node --version && npm --version
-
-# Скачиваем СТАТИЧЕСКУЮ сборку FFmpeg 7.1
-RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
-RUN tar -xf ffmpeg-release-amd64-static.tar.xz
-RUN mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/
-RUN mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/
-RUN chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
-
-# Очищаем временные файлы FFmpeg
-RUN rm -rf ffmpeg-release-amd64-static.tar.xz ffmpeg-*-amd64-static/
-
-# Устанавливаем дополнительные зависимости для работы Remotion в контейнере
-RUN apt install -y \
+# Устанавливаем системные зависимости
+RUN apt update && apt install -y \
+    wget \
+    xz-utils \
+    python3 \
+    python3-pip \
+    build-essential \
+    make \
+    g++ \
     libnss3 \
     libatk-bridge2.0-0 \
     libdrm2 \
@@ -38,10 +22,23 @@ RUN apt install -y \
     libgtk-3-0 \
     libxcb-dri3-0
 
-# Устанавливаем n8n с подробным выводом
-RUN npm install -g n8n@latest --verbose
+# Скачиваем СТАТИЧЕСКУЮ сборку FFmpeg 7.1
+RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz
+RUN tar -xf ffmpeg-release-amd64-static.tar.xz
+RUN mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/
+RUN mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/
+RUN chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
 
-# Устанавливаем Remotion и все зависимости
+# Очищаем временные файлы FFmpeg
+RUN rm -rf ffmpeg-release-amd64-static.tar.xz ffmpeg-*-amd64-static/
+
+# Обновляем npm
+RUN npm install -g npm@latest
+
+# Устанавливаем n8n
+RUN npm install -g n8n@latest
+
+# Устанавливаем Remotion
 RUN npm install -g \
     @remotion/cli@latest \
     @remotion/renderer@latest \
@@ -51,11 +48,10 @@ RUN npm install -g \
     @remotion/fonts@latest \
     @remotion/noise@latest
 
-# Проверяем версии
+# Проверяем основные версии
 RUN echo "=== NODE VERSION ===" && node --version && \
     echo "=== NPM VERSION ===" && npm --version && \
     echo "=== N8N VERSION ===" && n8n --version && \
-    echo "=== REMOTION VERSION ===" && remotion --version && \
     echo "=== FFMPEG VERSION CHECK ===" && \
     ffmpeg -version && \
     echo "=== END VERSION CHECK ==="
@@ -67,7 +63,7 @@ ENV WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/
 
 # Настройки для Remotion в headless режиме
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 EXPOSE 5678
 
