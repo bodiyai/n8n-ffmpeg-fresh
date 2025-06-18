@@ -1,31 +1,25 @@
 FROM node:20-bullseye-slim
 
-# Устанавливаем системные зависимости
+# Устанавливаем системные зависимости включая FFmpeg из репозитория
 RUN apt update && apt install -y --no-install-recommends \
     wget \
+    curl \
     chromium \
     fonts-liberation \
     ca-certificates \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
-
-# Устанавливаем FFmpeg
-RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
-    && tar -xf ffmpeg-release-amd64-static.tar.xz \
-    && mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/ \
-    && mv ffmpeg-*-amd64-static/ffprobe /usr/local/bin/ \
-    && chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe \
-    && rm -rf ffmpeg-*
 
 # Устанавливаем n8n
 RUN npm install -g n8n@latest && npm cache clean --force
 
-# Создаем рабочую директорию ОБЯЗАТЕЛЬНО
+# Создаем рабочую директорию
 WORKDIR /app
 
 # Создаем package.json и устанавливаем Remotion
 RUN echo '{"name": "n8n-remotion", "version": "1.0.0", "type": "module"}' > package.json
 
-# Устанавливаем Remotion пакеты с правильными флагами
+# Устанавливаем Remotion пакеты
 RUN npm install --save \
     @remotion/cli@latest \
     @remotion/renderer@latest \
@@ -36,12 +30,13 @@ RUN npm install --save \
     @remotion/noise@latest \
     && npm cache clean --force
 
-# Создаем симлинк ПОСЛЕ установки
+# Создаем симлинк
 RUN ln -sf /app/node_modules/.bin/remotion /usr/local/bin/remotion
 
-# Проверяем что все на месте
-RUN ls -la /app/node_modules/.bin/ && \
-    ls -la /app/node_modules/@remotion/ && \
+# Проверяем установку
+RUN which ffmpeg && ffmpeg -version && \
+    which ffprobe && ffprobe -version && \
+    ls -la /app/node_modules/.bin/ && \
     /app/node_modules/.bin/remotion --version
 
 # Настройки окружения
@@ -54,6 +49,8 @@ ENV N8N_HOST=0.0.0.0 \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 EXPOSE 5678
+
+# Возвращаемся в корневую директорию для n8n
 WORKDIR /
 
 CMD ["n8n", "start"]
