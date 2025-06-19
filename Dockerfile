@@ -36,9 +36,17 @@ RUN npm install
 # Создаем директорию для n8n
 RUN mkdir -p /root/.n8n
 
-# Переменные окружения для n8n
+# Создаем стартовый скрипт
+RUN echo '#!/bin/bash\n\
+echo "Starting n8n with PORT: $PORT"\n\
+echo "N8N_HOST: $N8N_HOST"\n\
+echo "N8N_LISTEN_ADDRESS: $N8N_LISTEN_ADDRESS"\n\
+n8n start' > /start.sh && chmod +x /start.sh
+
+# Переменные окружения для n8n - ИСПОЛЬЗУЕМ ПРАВИЛЬНЫЕ ИМЕНА
 ENV N8N_HOST=0.0.0.0
 ENV N8N_LISTEN_ADDRESS=0.0.0.0
+ENV N8N_PORT=5678
 ENV N8N_PROTOCOL=http
 ENV N8N_DISABLE_UI=false
 ENV N8N_ENCRYPTION_KEY=n8n-railway-secret-key-12345678901234567890
@@ -59,8 +67,8 @@ ENV NODE_ENV=production
 # Настройки файловых разрешений
 ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
 
-# Экспортируем порт (Railway автоматически назначит)
-EXPOSE $PORT
+# Экспортируем стандартный порт
+EXPOSE 5678
 
-# Запускаем n8n БЕЗ флагов командной строки - только через переменные окружения
-CMD ["sh", "-c", "export N8N_PORT=$PORT && n8n start"]
+# Запускаем n8n через скрипт, который переопределит порт
+CMD ["sh", "-c", "N8N_PORT=${PORT:-5678} /start.sh"]
