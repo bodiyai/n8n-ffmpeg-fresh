@@ -1,60 +1,35 @@
-FROM node:22-bookworm-slim
+FROM node:20-slim
 
-# Cache buster для принудительной пересборки
-RUN echo "build-$(date +%s)" > /tmp/build_id
-
-# Системные зависимости для Chrome
+# Устанавливаем Chrome
 RUN apt-get update && apt-get install -y \
-    libnss3 \
-    libdbus-1-3 \
-    libatk1.0-0 \
-    libgbm-dev \
-    libasound2 \
-    libxrandr2 \
-    libxkbcommon-dev \
-    libxfixes3 \
-    libxcomposite1 \
-    libxdamage1 \
-    libatk-bridge2.0-0 \
-    libpango-1.0-0 \
-    libcairo2 \
-    libcups2 \
+    wget \
+    gnupg \
+    ca-certificates \
+    && wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
     && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем n8n глобально
-RUN npm install -g n8n@latest && npm cache clean --force
-
-# Создаем рабочую директорию
+# Рабочая папка
 WORKDIR /app
 
-# Создаем package.json
-RUN echo '{"name": "n8n-remotion", "version": "1.0.0", "type": "module"}' > package.json
+# Устанавливаем n8n
+RUN npm install -g n8n
 
-# Устанавливаем Remotion пакеты локально
-RUN npm install \
-    @remotion/cli@4.0.315 \
-    @remotion/renderer@4.0.315 \
-    @remotion/bundler@4.0.315 \
-    @remotion/media-utils@4.0.315 \
-    @remotion/shapes@4.0.315 \
-    @remotion/transitions@4.0.315 \
-    @remotion/fonts@4.0.315 \
-    @remotion/noise@4.0.315 \
-    && npm cache clean --force
+# Создаем файл для зависимостей
+RUN echo '{"name":"app","version":"1.0.0","dependencies":{"@remotion/cli":"4.0.315","@remotion/renderer":"4.0.315","react":"18.2.0","react-dom":"18.2.0"}}' > package.json
 
-# Проверяем что Remotion установился
-RUN npx remotion --version
+# Устанавливаем Remotion
+RUN npm install
 
-# Устанавливаем Chrome Headless Shell
-RUN npx remotion browser ensure
-
-# Переменные окружения
+# ВСЕ переменные окружения прямо в Dockerfile
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 ENV N8N_HOST=0.0.0.0
-ENV N8N_PORT=5678
+ENV N8N_PORT=$PORT
 ENV WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/
-ENV NODE_OPTIONS="--max-old-space-size=4096"
-ENV PATH="/app/node_modules/.bin:$PATH"
+ENV NODE_OPTIONS=--max-old-space-size=2048
 
-EXPOSE 5678
+EXPOSE $PORT
 
 CMD ["n8n", "start"]
