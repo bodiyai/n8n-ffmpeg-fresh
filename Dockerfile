@@ -42,6 +42,9 @@ RUN npm install \
     @remotion/noise@4.0.315 \
     && npm cache clean --force
 
+# Проверяем что Remotion установился
+RUN npx remotion --version
+
 # Устанавливаем Chrome Headless Shell
 RUN npx remotion browser ensure
 
