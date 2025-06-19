@@ -36,39 +36,26 @@ RUN npm install
 # Создаем директорию для n8n
 RUN mkdir -p /root/.n8n
 
-# Создаем стартовый скрипт
-RUN echo '#!/bin/bash\n\
-echo "Starting n8n with PORT: $PORT"\n\
-echo "N8N_HOST: $N8N_HOST"\n\
-echo "N8N_LISTEN_ADDRESS: $N8N_LISTEN_ADDRESS"\n\
-n8n start' > /start.sh && chmod +x /start.sh
-
-# Переменные окружения для n8n - ИСПОЛЬЗУЕМ ПРАВИЛЬНЫЕ ИМЕНА
-ENV N8N_HOST=0.0.0.0
-ENV N8N_LISTEN_ADDRESS=0.0.0.0
-ENV N8N_PORT=5678
-ENV N8N_PROTOCOL=http
-ENV N8N_DISABLE_UI=false
-ENV N8N_ENCRYPTION_KEY=n8n-railway-secret-key-12345678901234567890
-ENV WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/
-ENV N8N_EDITOR_BASE_URL=https://bodiyt.n8nintegrationevgen.ru/
-ENV N8N_SECURE_COOKIE=false
-ENV N8N_RUNNERS_ENABLED=true
-
-# Переменные для Puppeteer и Chrome
+# Переменные окружения
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV CHROME_BIN=/usr/bin/google-chrome-stable
-
-# Переменные для производительности
 ENV NODE_OPTIONS=--max-old-space-size=2048
 ENV NODE_ENV=production
 
-# Настройки файловых разрешений
+# Переменные n8n - ТОЛЬКО САМЫЕ НЕОБХОДИМЫЕ
+ENV N8N_ENCRYPTION_KEY=n8n-railway-secret-key-12345678901234567890
+ENV WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/
+ENV N8N_EDITOR_BASE_URL=https://bodiyt.n8nintegrationevgen.ru/
 ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
+ENV N8N_RUNNERS_ENABLED=true
+
+# Railway требует биндинг на 0.0.0.0 и порт из $PORT
+ENV N8N_HOST=0.0.0.0
+ENV N8N_LISTEN_ADDRESS=0.0.0.0
 
 # Экспортируем стандартный порт
 EXPOSE 5678
 
-# Запускаем n8n через скрипт, который переопределит порт
-CMD ["sh", "-c", "N8N_PORT=${PORT:-5678} /start.sh"]
+# Простой запуск - Railway автоматически передает $PORT
+CMD n8n start
