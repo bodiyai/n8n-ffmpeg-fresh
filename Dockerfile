@@ -1,6 +1,6 @@
 FROM node:22-bookworm-slim
 
-# Обновляем пакеты и устанавливаем зависимости для Chrome
+# Устанавливаем системные зависимости
 RUN apt-get update && apt-get install -y \
     libnss3 \
     libdbus-1-3 \
@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     libcups2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем все пакеты глобально
+# Устанавливаем все глобально одной командой
 RUN npm install -g \
     n8n@latest \
     @remotion/cli@latest \
@@ -31,20 +31,23 @@ RUN npm install -g \
     @remotion/noise@latest \
     && npm cache clean --force
 
+# Проверяем установку
+RUN which remotion && remotion --version
+
 # Устанавливаем Chrome Headless Shell
-RUN npx remotion browser ensure
+RUN remotion browser ensure
 
-# Настройки окружения
-ENV N8N_HOST=0.0.0.0 \
-    N8N_PORT=5678 \
-    WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/ \
-    NODE_OPTIONS="--max-old-space-size=4096"
+# Переменные окружения
+ENV N8N_HOST=0.0.0.0
+ENV N8N_PORT=5678
+ENV WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
-# Открываем порт для n8n
+# Порт
 EXPOSE 5678
 
-# Создаем рабочую директорию
+# Рабочая директория
 WORKDIR /app
 
-# Запускаем n8n
+# Команда запуска
 CMD ["n8n", "start"]
