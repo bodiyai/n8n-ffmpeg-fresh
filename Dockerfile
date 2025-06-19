@@ -1,6 +1,9 @@
 FROM node:22-bookworm-slim
 
-# Устанавливаем системные зависимости
+# Cache buster для принудительной пересборки
+RUN echo "build-$(date +%s)" > /tmp/build_id
+
+# Системные зависимости для Chrome
 RUN apt-get update && apt-get install -y \
     libnss3 \
     libdbus-1-3 \
@@ -18,36 +21,37 @@ RUN apt-get update && apt-get install -y \
     libcups2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем все глобально одной командой
-RUN npm install -g \
-    n8n@latest \
-    @remotion/cli@latest \
-    @remotion/renderer@latest \
-    @remotion/bundler@latest \
-    @remotion/media-utils@latest \
-    @remotion/shapes@latest \
-    @remotion/transitions@latest \
-    @remotion/fonts@latest \
-    @remotion/noise@latest \
+# Устанавливаем n8n глобально
+RUN npm install -g n8n@latest && npm cache clean --force
+
+# Создаем рабочую директорию
+WORKDIR /app
+
+# Создаем package.json
+RUN echo '{"name": "n8n-remotion", "version": "1.0.0", "type": "module"}' > package.json
+
+# Устанавливаем Remotion пакеты локально
+RUN npm install \
+    @remotion/cli@4.0.315 \
+    @remotion/renderer@4.0.315 \
+    @remotion/bundler@4.0.315 \
+    @remotion/media-utils@4.0.315 \
+    @remotion/shapes@4.0.315 \
+    @remotion/transitions@4.0.315 \
+    @remotion/fonts@4.0.315 \
+    @remotion/noise@4.0.315 \
     && npm cache clean --force
 
-# Проверяем установку
-RUN which remotion && remotion --version
-
 # Устанавливаем Chrome Headless Shell
-RUN remotion browser ensure
+RUN npx remotion browser ensure
 
 # Переменные окружения
 ENV N8N_HOST=0.0.0.0
 ENV N8N_PORT=5678
 ENV WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/
 ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV PATH="/app/node_modules/.bin:$PATH"
 
-# Порт
 EXPOSE 5678
 
-# Рабочая директория
-WORKDIR /app
-
-# Команда запуска
 CMD ["n8n", "start"]
