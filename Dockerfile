@@ -45,6 +45,7 @@ ENV N8N_ENCRYPTION_KEY=n8n-railway-secret-key-12345678901234567890
 ENV WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/
 ENV N8N_EDITOR_BASE_URL=https://bodiyt.n8nintegrationevgen.ru/
 ENV N8N_SECURE_COOKIE=false
+ENV N8N_RUNNERS_ENABLED=true
 
 # Переменные для Puppeteer и Chrome
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
@@ -61,5 +62,5 @@ ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
 # Экспортируем порт (Railway автоматически назначит)
 EXPOSE $PORT
 
-# Запускаем n8n БЕЗ флагов командной строки
-CMD ["sh", "-c", "N8N_PORT=$PORT n8n start"]
+# Запускаем n8n БЕЗ флагов командной строки - только через переменные окружения
+CMD ["sh", "-c", "export N8N_PORT=$PORT && n8n start"]
