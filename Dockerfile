@@ -1,7 +1,8 @@
 FROM node:20-slim
 
-# Force rebuild: 2025-06-22 16:10 EDT
-# Установка Chrome и зависимостей
+ARG CACHEBUST=$(date +%s)
+RUN echo "Cache bust: $CACHEBUST" > /tmp/cache_bust.txt
+
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -25,23 +26,17 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Установка n8n глобально
 RUN npm install -g n8n@latest
 
-# Создание минимального проекта Remotion
 RUN mkdir -p src && echo "import { defineComposition } from 'remotion'; defineComposition({ id: 'HelloWorld', component: () => <h1>Hello</h1> });" > src/index.ts
 
-# Установка зависимостей Remotion
 RUN echo '{"name":"app","version":"1.0.0","dependencies":{"@remotion/cli":"4.0.315","@remotion/renderer":"4.0.315","react":"18.2.0","react-dom":"18.2.0","typescript":"^5.0.0"}}' > package.json
 RUN npm install
 
-# Установка Remotion глобально
 RUN npm install -g @remotion/cli@4.0.315
 
-# Создание директории для n8n
 RUN mkdir -p /root/.n8n
 
-# Переменные окружения
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV CHROME_BIN=/usr/bin/google-chrome-stable
@@ -55,8 +50,6 @@ ENV N8N_RUNNERS_ENABLED=true
 ENV N8N_HOST=0.0.0.0
 ENV N8N_LISTEN_ADDRESS=0.0.0.0
 
-# Экспорт портов
 EXPOSE 5678 3000
 
-# Запуск n8n (Remotion запускаем через workflow)
 CMD ["n8n", "start"]
