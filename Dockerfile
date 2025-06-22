@@ -1,6 +1,6 @@
 FROM node:20-slim
-
-# Устанавливаем Chrome и зависимости
+# Cache bust: 2025-06-22 15:27 EDT
+# Установка Chrome и зависимостей
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -24,16 +24,20 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Устанавливаем n8n
+# Установка n8n глобально
 RUN npm install -g n8n@latest
 
-# Создаем package.json для Remotion
-RUN echo '{"name":"app","version":"1.0.0","dependencies":{"@remotion/cli":"4.0.315","@remotion/renderer":"4.0.315","@remotion/lambda":"4.0.315","react":"18.2.0","react-dom":"18.2.0","typescript":"^5.0.0"}}' > package.json
+# Создание минимального проекта Remotion
+RUN mkdir -p src && echo "import { defineComposition } from 'remotion'; defineComposition({ id: 'HelloWorld', component: () => <h1>Hello</h1> });" > src/index.ts
 
-# Устанавливаем Remotion
+# Установка зависимостей Remotion
+RUN echo '{"name":"app","version":"1.0.0","dependencies":{"@remotion/cli":"4.0.315","@remotion/renderer":"4.0.315","react":"18.2.0","react-dom":"18.2.0","typescript":"^5.0.0"}}' > package.json
 RUN npm install
 
-# Создаем директорию для n8n
+# Установка Remotion глобально
+RUN npm install -g @remotion/cli@4.0.315
+
+# Создание директории для n8n
 RUN mkdir -p /root/.n8n
 
 # Переменные окружения
@@ -42,20 +46,17 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV CHROME_BIN=/usr/bin/google-chrome-stable
 ENV NODE_OPTIONS=--max-old-space-size=2048
 ENV NODE_ENV=production
-
-# Переменные n8n - ТОЛЬКО САМЫЕ НЕОБХОДИМЫЕ
 ENV N8N_ENCRYPTION_KEY=n8n-railway-secret-key-12345678901234567890
 ENV WEBHOOK_URL=https://bodiyt.n8nintegrationevgen.ru/
 ENV N8N_EDITOR_BASE_URL=https://bodiyt.n8nintegrationevgen.ru/
 ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
 ENV N8N_RUNNERS_ENABLED=true
-
-# Railway требует биндинг на 0.0.0.0 и порт из $PORT
 ENV N8N_HOST=0.0.0.0
+ENV N8N_PORT=$PORT
 ENV N8N_LISTEN_ADDRESS=0.0.0.0
 
-# Экспортируем стандартный порт
-EXPOSE 5678
+# Экспорт портов
+EXPOSE $PORT 3000
 
-# Простой запуск - Railway автоматически передает $PORT
-CMD cd /app && npx remotion start --port=3000 & n8n start
+# Запуск n8n (Remotion можно запускать через n8n workflow)
+CMD ["n8n", "start"]
