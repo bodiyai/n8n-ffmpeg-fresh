@@ -1,9 +1,6 @@
 FROM node:20-slim
 
-# Сброс кэша с уникальным значением
-ARG CACHEBUST=1
-RUN echo "Cache bust: $(date) - $CACHEBUST" > /tmp/cache_bust.txt
-
+# Force rebuild: 2025-06-22 16:10 EDT
 # Установка Chrome и зависимостей
 RUN apt-get update && apt-get install -y \
     wget \
@@ -56,11 +53,10 @@ ENV N8N_EDITOR_BASE_URL=https://bodiyt.n8nintegrationevgen.ru/
 ENV N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
 ENV N8N_RUNNERS_ENABLED=true
 ENV N8N_HOST=0.0.0.0
-ENV N8N_PORT=$PORT
 ENV N8N_LISTEN_ADDRESS=0.0.0.0
 
 # Экспорт портов
-EXPOSE $PORT 3000
+EXPOSE 5678 3000
 
-# Запуск n8n с явным указанием порта через переменную
-CMD sh -c "n8n start"
+# Запуск n8n (Remotion запускаем через workflow)
+CMD ["n8n", "start"]
