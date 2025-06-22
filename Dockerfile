@@ -1,5 +1,8 @@
 FROM node:20-slim
-RUN echo "Cache bust: $(date)" > /tmp/cache_bust.txt
+
+# Сброс кэша с уникальным значением
+ARG CACHEBUST=1
+RUN echo "Cache bust: $(date) - $CACHEBUST" > /tmp/cache_bust.txt
 
 # Установка Chrome и зависимостей
 RUN apt-get update && apt-get install -y \
@@ -59,5 +62,5 @@ ENV N8N_LISTEN_ADDRESS=0.0.0.0
 # Экспорт портов
 EXPOSE $PORT 3000
 
-# Запуск n8n
-CMD ["n8n", "start"]
+# Запуск n8n с явным указанием порта через переменную
+CMD sh -c "n8n start"
