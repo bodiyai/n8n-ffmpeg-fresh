@@ -1,5 +1,6 @@
 FROM node:20-slim
-# Cache bust: 2025-06-22 15:27 EDT
+RUN echo "Cache bust: $(date)" > /tmp/cache_bust.txt
+
 # Установка Chrome и зависимостей
 RUN apt-get update && apt-get install -y \
     wget \
@@ -58,5 +59,5 @@ ENV N8N_LISTEN_ADDRESS=0.0.0.0
 # Экспорт портов
 EXPOSE $PORT 3000
 
-# Запуск n8n (Remotion можно запускать через n8n workflow)
-CMD ["n8n", "start"]
+# Запуск n8n
+CMD ["n8n", "start", "--port", "$PORT"]
