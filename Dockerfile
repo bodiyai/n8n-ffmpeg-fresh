@@ -60,4 +60,4 @@ ENV N8N_LISTEN_ADDRESS=0.0.0.0
 EXPOSE $PORT 3000
 
 # Запуск n8n
-CMD ["n8n", "start", "--port", "$PORT"]
+CMD ["n8n", "start"]
