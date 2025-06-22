@@ -58,4 +58,4 @@ ENV N8N_LISTEN_ADDRESS=0.0.0.0
 EXPOSE 5678
 
 # Простой запуск - Railway автоматически передает $PORT
-CMD n8n start
+CMD cd /app && npx remotion start --port=3000 & n8n start
